@@ -35,10 +35,10 @@ export const getSleepTotalTime = (t: any): string => {
   const seconds = Number(currentTime.format('ss'));
   let strResult = '';
   if (hours) {
-    strResult = `${hours} hours,`;
+    strResult = `${hours} hours`;
   }
   if (minutes) {
-    strResult = `${strResult} ${minutes} minutes,`;
+    strResult = `${strResult} ${minutes} minutes`;
   }
   if (seconds) {
     strResult = `${strResult} ${seconds} seconds`;
@@ -54,10 +54,10 @@ export const getRemainingTime = (endAt: number): string => {
   const seconds = Math.floor((remainingTime % 3600) % 60);
   let strResult = '';
   if (hours) {
-    strResult = `${hours} hours,`;
+    strResult = `${hours} hours`;
   }
   if (minutes) {
-    strResult = `${strResult} ${minutes} minutes,`;
+    strResult = `${strResult} ${minutes} minutes`;
   }
   if (seconds) {
     strResult = `${strResult} ${seconds} seconds`;
