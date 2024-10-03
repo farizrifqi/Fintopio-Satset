@@ -7,7 +7,7 @@ export interface InitData {
 }
 
 export interface InitOptions {
-  jobs: JobOptions;
+  jobs?: JobOptions;
   verbose?: boolean;
 }
 
