@@ -2,18 +2,19 @@ import axios from 'axios';
 import {
   AUTH_ENDPOINT,
   BASE_URL,
+  DAILYCHECKINS_ENDPOINT,
   DIAMONDCLICKER_ENDPOINT,
   FARMING_ENDPOINT,
   FASTINIT_ENDPOINT
 } from '../utils/constants';
 import { InitData, InitOptions } from '../types/Satset';
-import { AuthResponse, BearerToken, QueryID } from '../types/Auth';
+import { BearerToken, QueryID } from '../types/Auth';
 import { FarmingStateResponse } from '../types/Farming';
 import { ErrorResponse } from '../types/Error';
 import { CustomError } from './Error';
 import { LogSystem } from '../utils/log';
 import { RawAxiosRequestHeaders } from 'axios';
-import { getRemainingTime, getSleepTotalTime, sleep } from '../utils/helpers';
+import { getRemainingTime, sleep } from '../utils/helpers';
 import { FastInitResponse } from '../types/FastInit';
 import { DiamondNumber } from '../types/Diamond';
 
@@ -181,6 +182,24 @@ export class Satset {
       return new CustomError(message, statusCode);
     }
   };
+  private claimDailyCheckin = async (): Promise<any | CustomError> => {
+    try {
+      const response = await axios.post(
+        DAILYCHECKINS_ENDPOINT,
+        {},
+        {
+          headers: this._getHeaders()
+        }
+      );
+      return response.data;
+    } catch (err) {
+      const { message, statusCode }: ErrorResponse = err.response?.data;
+      const errorHandled = await this._handleErrorAfterRequest({ message });
+      if (errorHandled) return await this.getFarmingState();
+      return new CustomError(message, statusCode);
+    }
+  };
+
   private claimFarming = async (): Promise<any | CustomError> => {
     try {
       const response = await axios.post(
@@ -312,7 +331,27 @@ export class Satset {
     await sleep(runDelay);
     return await this.runDiamond();
   };
+  public runDaily = async (): Promise<void> => {
+    let runDelay = 60 * 1000 * 60 * 12; // 12 hour
+    const dailyClaim = await this.makeRequest(this['claimDailyCheckin']);
+    if (!dailyClaim.claimed) {
+      this.log.send(
+        'success',
+        'Successfully check-in for today',
+        `Claimed ${dailyClaim.dailyReward} points`,
+        `${dailyClaim.todalDays} day streak`
+      );
+    } else {
+      this.log.send('danger', `Check-in not ready`);
+    }
+    this.log.send(
+      'info',
+      `Re-run in ${getRemainingTime((new Date().getTime() + runDelay) / 1000)}`
+    );
+    await sleep(runDelay);
+    return await this.runDaily();
+  };
   run = async (): Promise<void> => {
-    await Promise.all([this.runFarming(), this.runDiamond()]);
+    await Promise.all([this.runDaily(), this.runFarming(), this.runDiamond()]);
   };
 }
