@@ -1,5 +1,11 @@
 import axios from 'axios';
-import { AUTH_ENDPOINT, BASE_URL, FARMING_ENDPOINT } from '../utils/constants';
+import {
+  AUTH_ENDPOINT,
+  BASE_URL,
+  DIAMONDCLICKER_ENDPOINT,
+  FARMING_ENDPOINT,
+  FASTINIT_ENDPOINT
+} from '../utils/constants';
 import { InitData, InitOptions } from '../types/Satset';
 import { AuthResponse, BearerToken, QueryID } from '../types/Auth';
 import { FarmingStateResponse } from '../types/Farming';
@@ -8,6 +14,8 @@ import { CustomError } from './Error';
 import { LogSystem } from '../utils/log';
 import { RawAxiosRequestHeaders } from 'axios';
 import { getRemainingTime, getSleepTotalTime, sleep } from '../utils/helpers';
+import { FastInitResponse } from '../types/FastInit';
+import { DiamondNumber } from '../types/Diamond';
 
 export class Satset {
   private queryId: QueryID;
@@ -112,6 +120,19 @@ export class Satset {
 
     return true;
   };
+  private fastInit = async (): Promise<FastInitResponse | CustomError> => {
+    try {
+      const response = await axios.get(FASTINIT_ENDPOINT, {
+        headers: this._getHeaders()
+      });
+      return response.data;
+    } catch (err) {
+      const { message, statusCode }: ErrorResponse = err.response?.data;
+      const errorHandled = await this._handleErrorAfterRequest({ message });
+      if (errorHandled) return await this.fastInit();
+      return new CustomError(message, statusCode);
+    }
+  };
   makeAuth = async (): Promise<any> => {
     try {
       const response = await axios.get(
@@ -128,7 +149,9 @@ export class Satset {
       return false;
     }
   };
-  getFarmingState = async (): Promise<FarmingStateResponse | CustomError> => {
+  private getFarmingState = async (): Promise<
+    FarmingStateResponse | CustomError
+  > => {
     try {
       const response = await axios.get(FARMING_ENDPOINT + '/state', {
         headers: this._getHeaders()
@@ -141,7 +164,7 @@ export class Satset {
       return new CustomError(message, statusCode);
     }
   };
-  startFarming = async (): Promise<any | CustomError> => {
+  private startFarming = async (): Promise<any | CustomError> => {
     try {
       const response = await axios.post(
         FARMING_ENDPOINT + '/farm',
@@ -158,11 +181,30 @@ export class Satset {
       return new CustomError(message, statusCode);
     }
   };
-  claimFarming = async (): Promise<any | CustomError> => {
+  private claimFarming = async (): Promise<any | CustomError> => {
     try {
       const response = await axios.post(
         FARMING_ENDPOINT + '/claim',
         {},
+        {
+          headers: this._getHeaders()
+        }
+      );
+      return response.data;
+    } catch (err) {
+      const { message, statusCode }: ErrorResponse = err.response?.data;
+      const errorHandled = await this._handleErrorAfterRequest({ message });
+      if (errorHandled) return await this.getFarmingState();
+      return new CustomError(message, statusCode);
+    }
+  };
+  private diamondClicker = async (
+    diamondNumber: DiamondNumber
+  ): Promise<any | CustomError> => {
+    try {
+      const response = await axios.post(
+        DIAMONDCLICKER_ENDPOINT + '/complete',
+        { diamondNumber },
         {
           headers: this._getHeaders()
         }
@@ -224,7 +266,53 @@ export class Satset {
     await sleep(runFarmingDelay);
     return await this.runFarming();
   };
+  public runDiamond = async (): Promise<void> => {
+    let runDelay = 60 * 1000 * 60; // 1 hour
+    const { clickerDiamondState } = await this.makeRequest(this['fastInit']);
+    if (clickerDiamondState) {
+      if (clickerDiamondState.state == 'available') {
+        if (this.options.verbose) {
+          this.log.send('info', 'Diamond is available');
+        }
+        this.log.send('info', 'Diamond clicker...');
+        const clicks = await this.makeRequest(
+          this['diamondClicker'],
+          clickerDiamondState.diamondNumber
+        );
+        if (clicks) {
+          this.log.send('success', 'Successfully click diamond');
+        } else {
+          this.log.send('warn', 'Failed to click diamond');
+        }
+      } else if (clickerDiamondState.state == 'unavailable') {
+        if (clickerDiamondState.timings?.nextAt) {
+          this.log.send(
+            `info`,
+            'Next diamond in',
+            getRemainingTime(clickerDiamondState.timings?.nextAt / 1000)
+          );
+          runDelay = clickerDiamondState.timings?.nextAt - new Date().getTime();
+        }
+      } else {
+        this.log.send(
+          'warn',
+          `Unhandled Clicker Diamond State`,
+          `state: ${clickerDiamondState.state}`
+        );
+      }
+    } else {
+      this.log.send('error', `Failed run diamond`);
+    }
+    this.log.send(
+      'info',
+      `Re-check diamond clicker in ${getRemainingTime(
+        clickerDiamondState.timings?.nextAt / 1000
+      )}`
+    );
+    await sleep(runDelay);
+    return await this.runDiamond();
+  };
   run = async (): Promise<void> => {
-    await Promise.all([this.runFarming()]);
+    await Promise.all([this.runFarming(), this.runDiamond()]);
   };
 }
