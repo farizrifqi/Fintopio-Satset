@@ -10,24 +10,24 @@ export const sleep = (ms: number): Promise<void> => {
 };
 
 export const currentTime = (): string => {
-  let date_ob = new Date(
+  const date_ob = new Date(
     new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' })
   );
-  let hours = zeroPad(date_ob.getHours().toString());
-  let minutes = zeroPad(date_ob.getMinutes().toString());
-  let seconds = zeroPad(date_ob.getSeconds().toString());
-  let milsec = zeroPad(date_ob.getMilliseconds().toString(), true);
-  return hours + ':' + minutes + ':' + seconds + ':' + milsec;
+  const hours = zeroPad(date_ob.getHours().toString());
+  const minutes = zeroPad(date_ob.getMinutes().toString());
+  const seconds = zeroPad(date_ob.getSeconds().toString());
+  const milsec = zeroPad(date_ob.getMilliseconds().toString(), true);
+  return `${hours}:${minutes}:${seconds}:${milsec}`;
 };
-export const zeroPad = (str: any, s = false): string => {
-  str = str.toString();
+export const zeroPad = (str: string | number, s = false): string => {
+  let newstr = str.toString();
   if (s) {
-    str = str.length > 2 ? str.substring(0, 2) : str;
+    newstr = newstr.length > 2 ? newstr.substring(0, 2) : newstr;
   }
-  return str.length >= 2 ? str : '0' + str;
+  return newstr.length >= 2 ? newstr : `0${newstr}`;
 };
 
-export const getSleepTotalTime = (t: any): string => {
+export const getSleepTotalTime = (t: number | string): string => {
   const currentTime = moment(t);
 
   const hours = Number(currentTime.format('HH'));
@@ -47,7 +47,7 @@ export const getSleepTotalTime = (t: any): string => {
 };
 
 export const getRemainingTime = (endAt: number): string => {
-  let resultText: string[] = [];
+  const resultText: string[] = [];
   const now = moment().unix();
   const remainingTime = endAt - now;
   const hours = Math.floor(remainingTime / 3600);

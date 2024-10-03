@@ -7,16 +7,16 @@ import {
   FARMING_ENDPOINT,
   FASTINIT_ENDPOINT
 } from '../utils/constants';
-import { InitData, InitOptions } from '../types/Satset';
-import { BearerToken, QueryID } from '../types/Auth';
-import { FarmingStateResponse } from '../types/Farming';
-import { ErrorResponse } from '../types/Error';
+import type { InitData, InitOptions } from '../types/Satset';
+import type { BearerToken, QueryID } from '../types/Auth';
+import type { FarmingStateResponse } from '../types/Farming';
+import type { ErrorResponse } from '../types/Error';
 import { CustomError } from './Error';
-import { LogSystem } from '../utils/log';
-import { RawAxiosRequestHeaders } from 'axios';
+import type { LogSystem } from '../utils/log';
+import type { RawAxiosRequestHeaders } from 'axios';
 import { getRemainingTime, sleep } from '../utils/helpers';
-import { FastInitResponse } from '../types/FastInit';
-import { DiamondNumber } from '../types/Diamond';
+import type { FastInitResponse } from '../types/FastInit';
+import type { DiamondNumber } from '../types/Diamond';
 
 export class Satset {
   private queryId: QueryID;
@@ -49,9 +49,9 @@ export class Satset {
   private _handleErrorAfterRequest = async ({
     message
   }: {
-    message: any;
+    message: string;
   }): Promise<boolean> => {
-    if (message == 'Token is not valid') {
+    if (message === 'Token is not valid') {
       this.bearerToken = undefined;
       return true;
     }
@@ -71,18 +71,19 @@ export class Satset {
       Webapp: 'true'
     };
     if (this.bearerToken) {
-      headers['Authorization'] = 'Bearer ' + this.bearerToken;
+      headers.Authorization = `Bearer ${this.bearerToken}`;
     }
     return headers;
   };
 
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   public async makeRequest<T extends (...args: any[]) => Promise<any>>(
     func: T,
     ...params: Parameters<T>
-  ): Promise<ReturnType<T> | null | any> {
-    const retries =
+  ): Promise<ReturnType<T> | null> {
+    const retries: number =
       params[0] && typeof params[0] === 'object' && 'retries' in params[0]
-        ? (params[0] as any).retries
+        ? (params[0] as { retries: number }).retries
         : 0;
     if (retries >= 5) {
       this.log.send('error', 'Request failed after 5 retries');
@@ -101,21 +102,20 @@ export class Satset {
 
       if (error instanceof CustomError) {
         return await this.makeRequest(func, ...newParams);
-      } else {
-        return error;
       }
+      return error;
     }
   }
   init = async (): Promise<boolean> => {
     if (!this.bearerToken) {
-      this.log.send(`info`, `Getting token`);
+      this.log.send('info', 'Getting token');
       const auth = await this.makeAuth();
       if (!auth) {
-        this.log.send(`warn`, `Failed getting token`);
+        this.log.send('warn', 'Failed getting token');
         return false;
       }
       this.bearerToken = auth.token;
-      this.log.send(`success`, `Getting token completed`);
+      this.log.send('success', 'Getting token completed');
       return true;
     }
 
@@ -128,23 +128,24 @@ export class Satset {
       });
       return response.data;
     } catch (err) {
-      const { message, statusCode }: ErrorResponse = err.response?.data;
+      const { message, statusCode }: ErrorResponse = err.response.data;
       const errorHandled = await this._handleErrorAfterRequest({ message });
       if (errorHandled) return await this.fastInit();
       return new CustomError(message, statusCode);
     }
   };
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   makeAuth = async (): Promise<any> => {
     try {
       const response = await axios.get(
-        AUTH_ENDPOINT + '/telegram?' + this.queryId,
+        `${AUTH_ENDPOINT}/telegram?${this.queryId}`,
         {
           headers: this._getHeaders()
         }
       );
       return response.data;
     } catch (err) {
-      const { message, statusCode }: ErrorResponse = err.response?.data;
+      const { message, statusCode }: ErrorResponse = err.response.data;
       if (message) this.log.send('error', message);
 
       return false;
@@ -154,21 +155,22 @@ export class Satset {
     FarmingStateResponse | CustomError
   > => {
     try {
-      const response = await axios.get(FARMING_ENDPOINT + '/state', {
+      const response = await axios.get(`${FARMING_ENDPOINT}/state`, {
         headers: this._getHeaders()
       });
       return response.data;
     } catch (err) {
-      const { message, statusCode }: ErrorResponse = err.response?.data;
+      const { message, statusCode }: ErrorResponse = err.response.data;
       const errorHandled = await this._handleErrorAfterRequest({ message });
       if (errorHandled) return await this.getFarmingState();
       return new CustomError(message, statusCode);
     }
   };
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   private startFarming = async (): Promise<any | CustomError> => {
     try {
       const response = await axios.post(
-        FARMING_ENDPOINT + '/farm',
+        `${FARMING_ENDPOINT}/farm`,
         {},
         {
           headers: this._getHeaders()
@@ -176,12 +178,13 @@ export class Satset {
       );
       return response.data;
     } catch (err) {
-      const { message, statusCode }: ErrorResponse = err.response?.data;
+      const { message, statusCode }: ErrorResponse = err.response.data;
       const errorHandled = await this._handleErrorAfterRequest({ message });
       if (errorHandled) return await this.getFarmingState();
       return new CustomError(message, statusCode);
     }
   };
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   private claimDailyCheckin = async (): Promise<any | CustomError> => {
     try {
       const response = await axios.post(
@@ -193,17 +196,18 @@ export class Satset {
       );
       return response.data;
     } catch (err) {
-      const { message, statusCode }: ErrorResponse = err.response?.data;
+      const { message, statusCode }: ErrorResponse = err.response.data;
       const errorHandled = await this._handleErrorAfterRequest({ message });
       if (errorHandled) return await this.getFarmingState();
       return new CustomError(message, statusCode);
     }
   };
 
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   private claimFarming = async (): Promise<any | CustomError> => {
     try {
       const response = await axios.post(
-        FARMING_ENDPOINT + '/claim',
+        `${FARMING_ENDPOINT}/claim`,
         {},
         {
           headers: this._getHeaders()
@@ -211,7 +215,7 @@ export class Satset {
       );
       return response.data;
     } catch (err) {
-      const { message, statusCode }: ErrorResponse = err.response?.data;
+      const { message, statusCode }: ErrorResponse = err.response.data;
       const errorHandled = await this._handleErrorAfterRequest({ message });
       if (errorHandled) return await this.getFarmingState();
       return new CustomError(message, statusCode);
@@ -219,10 +223,11 @@ export class Satset {
   };
   private diamondClicker = async (
     diamondNumber: DiamondNumber
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   ): Promise<any | CustomError> => {
     try {
       const response = await axios.post(
-        DIAMONDCLICKER_ENDPOINT + '/complete',
+        `${DIAMONDCLICKER_ENDPOINT}/complete`,
         { diamondNumber },
         {
           headers: this._getHeaders()
@@ -231,7 +236,7 @@ export class Satset {
       console.log({ dt: response.data });
       return response.data;
     } catch (err) {
-      const { message, statusCode }: ErrorResponse = err.response?.data;
+      const { message, statusCode }: ErrorResponse = err.response.data;
       const errorHandled = await this._handleErrorAfterRequest({ message });
       if (errorHandled) return await this.getFarmingState();
       return new CustomError(message, statusCode);
@@ -239,43 +244,38 @@ export class Satset {
   };
   public runFarming = async (): Promise<void> => {
     let runFarmingDelay = 60 * 1000 * 60; // 1 hour
-    const farmingState = await this.makeRequest(this['getFarmingState']);
-    if (farmingState) {
-      if (farmingState.state == 'farming') {
-        if (farmingState.timings?.left) {
+    const response = await this.makeRequest(this.getFarmingState);
+    if (response) {
+      const { state, timings } = response as FarmingStateResponse;
+      if (state === 'farming') {
+        if (timings.left) {
           this.log.send(
-            `info`,
+            'info',
             'Farming end in',
-            getRemainingTime(farmingState.timings?.finish / 1000)
+            getRemainingTime(timings.finish / 1000)
           );
-          runFarmingDelay = farmingState.timings?.left + 60 * 1000 * 5;
+          runFarmingDelay = timings.left + 60 * 1000 * 5;
         }
-      } else if (farmingState.state == 'farmed') {
-        if (this.options.verbose) this.log.send(`success`, 'Farming completed');
+      } else if (state === 'farmed') {
+        if (this.options.verbose) this.log.send('success', 'Farming completed');
         if (this.options.verbose)
-          this.log.send(`info`, 'Claiming farming reward');
-        const claimFarming = await this.makeRequest(this['claimFarming']);
+          this.log.send('info', 'Claiming farming reward');
+        const claimFarming = await this.makeRequest(this.claimFarming);
 
-        this.log.send(`success`, 'Farming reward claimed.');
+        this.log.send('success', 'Farming reward claimed.');
         if (claimFarming) return await this.runFarming();
-      } else if (farmingState.state == 'idling') {
-        if (this.options.verbose) this.log.send(`info`, 'Start farming');
-        const startFarmingResponse = await this.makeRequest(
-          this['startFarming']
-        );
+      } else if (state === 'idling') {
+        if (this.options.verbose) this.log.send('info', 'Start farming');
+        const startFarmingResponse = await this.makeRequest(this.startFarming);
         if (startFarmingResponse) {
-          this.log.send(`success`, 'Farming started.');
+          this.log.send('success', 'Farming started.');
           return await this.runFarming();
         }
       } else {
-        this.log.send(
-          'warn',
-          `Unhandled Farming State`,
-          `state: ${farmingState.state}`
-        );
+        this.log.send('warn', 'Unhandled Farming State', `state: ${state}`);
       }
     } else {
-      this.log.send('error', `Failed run farming`);
+      this.log.send('error', 'Failed run farming');
     }
     this.log.send(
       'info',
@@ -288,15 +288,17 @@ export class Satset {
   };
   public runDiamond = async (): Promise<void> => {
     let runDelay = 60 * 1000 * 60; // 1 hour
-    const { clickerDiamondState } = await this.makeRequest(this['fastInit']);
-    if (clickerDiamondState) {
-      if (clickerDiamondState.state == 'available') {
+    const response = await this.makeRequest(this.fastInit);
+    if (response) {
+      const { clickerDiamondState } = response as FastInitResponse;
+
+      if (clickerDiamondState.state === 'available') {
         if (this.options.verbose) {
           this.log.send('info', 'Diamond is available');
         }
         this.log.send('info', 'Diamond clicker...');
         const clicks = await this.makeRequest(
-          this['diamondClicker'],
+          this.diamondClicker,
           clickerDiamondState.diamondNumber
         );
         if (clicks) {
@@ -304,10 +306,10 @@ export class Satset {
         } else {
           this.log.send('warn', 'Failed to click diamond');
         }
-      } else if (clickerDiamondState.state == 'unavailable') {
+      } else if (clickerDiamondState.state === 'unavailable') {
         if (clickerDiamondState.timings?.nextAt) {
           this.log.send(
-            `info`,
+            'info',
             'Next diamond in',
             getRemainingTime(clickerDiamondState.timings?.nextAt / 1000)
           );
@@ -316,25 +318,25 @@ export class Satset {
       } else {
         this.log.send(
           'warn',
-          `Unhandled Clicker Diamond State`,
+          'Unhandled Clicker Diamond State',
           `state: ${clickerDiamondState.state}`
         );
       }
     } else {
-      this.log.send('error', `Failed run diamond`);
+      this.log.send('error', 'Failed run diamond');
     }
     this.log.send(
       'info',
       `Re-check diamond clicker in ${getRemainingTime(
-        clickerDiamondState.timings?.nextAt / 1000
+        (new Date().getTime() + runDelay) / 1000
       )}`
     );
     await sleep(runDelay);
     return await this.runDiamond();
   };
   public runDaily = async (): Promise<void> => {
-    let runDelay = 60 * 1000 * 60 * 12; // 12 hour
-    const dailyClaim = await this.makeRequest(this['claimDailyCheckin']);
+    const runDelay = 60 * 1000 * 60 * 12; // 12 hour
+    const dailyClaim = await this.makeRequest(this.claimDailyCheckin);
     if (!dailyClaim.claimed) {
       this.log.send(
         'success',
@@ -343,7 +345,7 @@ export class Satset {
         `${dailyClaim.todalDays} day streak`
       );
     } else {
-      this.log.send('danger', `Check-in not ready`);
+      this.log.send('danger', 'Check-in not ready');
     }
     this.log.send(
       'info',

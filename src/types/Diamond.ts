@@ -1,5 +1,15 @@
 export type DiamondState = 'available' | 'unavailable';
 export type DiamondNumber = number;
+
+interface boosts {
+  [key: string]: {
+    id: number;
+    price: string;
+    quantity: string;
+    type: string;
+  };
+}
+
 export interface clickerDiamondState {
   state: DiamondState;
   clicks: number;
@@ -16,6 +26,14 @@ export interface clickerDiamondState {
     totalReward: string;
     baseGem: string;
   };
-  rewards: any;
-  boosts: any;
+  rewards: {
+    gem: {
+      name: string;
+    };
+    hold: {
+      amount: string;
+    };
+    voucher: null | string;
+  };
+  boosts: boosts[];
 }

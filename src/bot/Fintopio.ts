@@ -1,7 +1,7 @@
-import { InitData, InitOptions } from '../types/Satset';
+import type { InitData, InitOptions } from '../types/Satset';
 import { Satset } from './Satset';
 import { parseQuery } from '../utils/parser';
-import { BotIdentifier } from '../types/Auth';
+import type { BotIdentifier } from '../types/Auth';
 import { LogSystem } from '../utils/log';
 
 interface FintopioBot {
@@ -47,23 +47,23 @@ export class Fintopio {
 
   public init = async (): Promise<void> => {
     this.log.send(
-      `info`,
+      'info',
       `Start initiating ${this.listInitiatedData.length} queryId`
     );
     await Promise.all(this.listInitiatedData.map((data) => this.initBot(data)));
     this.initiated = true;
 
     this.log.send(
-      this.bots.length > 0 ? `success` : `error`,
+      this.bots.length > 0 ? 'success' : 'error',
       `${this.bots.length} of ${this.listInitiatedData.length} query successfully initiated.`
     );
   };
   public run = async (): Promise<void> => {
     if (!this.initiated) {
-      this.log.send(`error`, `Please initiate the bot first.`);
+      this.log.send('error', 'Please initiate the bot first.');
       return;
     }
-    this.log.send(`info`, 'Running...');
+    this.log.send('info', 'Running...');
     await Promise.all(this.bots.map((bot) => bot.client.run()));
   };
 }

@@ -1,4 +1,4 @@
-import { BearerToken, QueryID } from './Auth';
+import type { BearerToken, QueryID } from './Auth';
 type Job = 'daily' | 'farming' | 'diamond';
 
 export interface InitData {

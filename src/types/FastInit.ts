@@ -1,6 +1,8 @@
-import { clickerDiamondState } from './Diamond';
+import type { clickerDiamondState } from './Diamond';
 
 export interface FastInitResponse {
+  clickerDiamondState: clickerDiamondState;
+
   referralData: {
     isDailyRewardClaimed: boolean;
     claimableTasks: number;
@@ -9,13 +11,15 @@ export interface FastInitResponse {
       used: number;
       total: number;
     };
-    lastReferrals: any;
-    rewardPercent: any;
+    lastReferrals: unknown[];
+    rewardPercent: unknown[];
     url: string;
-    level: any;
+    level: {
+      name: string;
+      rewardMultiplier: number;
+    };
     leaderboard: {
       position: number;
     };
   };
-  clickerDiamondState: clickerDiamondState;
 }

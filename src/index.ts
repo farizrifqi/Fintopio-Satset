@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import { Fintopio } from './bot/Fintopio';
-import { InitData } from './types/Satset';
+import type { InitData } from './types/Satset';
 (async () => {
   const queries = fs
     .readFileSync('query.txt', 'utf8')

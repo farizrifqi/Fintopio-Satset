@@ -1,5 +1,5 @@
-import { ParsedQueryID } from '../types/Query';
-import { QueryID } from '../types/Auth';
+import type { ParsedQueryID } from '../types/Query';
+import type { QueryID } from '../types/Auth';
 
 export const parseQuery = (query: QueryID): ParsedQueryID | null => {
   const params = new URLSearchParams(query);

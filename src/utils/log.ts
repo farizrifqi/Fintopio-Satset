@@ -1,6 +1,6 @@
 import { currentTime } from './helpers';
 
-var colors = require('@colors/colors/safe');
+const colors = require('@colors/colors/safe');
 
 enum COLOUR {
   Danger = 'danger',
@@ -14,17 +14,22 @@ export class LogSystem {
   constructor(identifier?: string) {
     this.identifier = identifier ?? '-';
   }
-  public send = (...outputs: any[]): void => {
-    let listObj: any = {};
-    let getObj = outputs.filter((o: any) => typeof o == 'object');
-    getObj.forEach((ob: any) => {
-      Object.keys(ob).forEach((o) => {
-        listObj[o] = ob[o];
-      });
-    });
-    let type = outputs[0];
+  public send = (...outputs: unknown[]): void => {
+    const listObj: Record<string, unknown> = {};
+    const getObj = outputs.filter(
+      (o): o is Record<string, unknown> => typeof o === 'object' && o !== null
+    );
+
+    for (const ob of getObj) {
+      for (const [key, value] of Object.entries(ob)) {
+        listObj[key] = value;
+      }
+    }
+
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    const type: any = outputs[0];
     const identifier =
-      this.identifier.toLowerCase() == 'sys'
+      this.identifier.toLowerCase() === 'sys'
         ? colors.yellow.underline(`[${this.identifier}]`)
         : colors.blue.underline(`[${this.identifier}]`);
     if (Object.values(COLOUR).includes(type)) {
