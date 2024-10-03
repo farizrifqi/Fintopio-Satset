@@ -47,20 +47,20 @@ export const getSleepTotalTime = (t: any): string => {
 };
 
 export const getRemainingTime = (endAt: number): string => {
+  let resultText: string[] = [];
   const now = moment().unix();
   const remainingTime = endAt - now;
   const hours = Math.floor(remainingTime / 3600);
   const minutes = Math.floor((remainingTime % 3600) / 60);
   const seconds = Math.floor((remainingTime % 3600) % 60);
-  let strResult = '';
   if (hours) {
-    strResult = `${hours} hours`;
+    resultText.push(`${hours} hours`);
   }
   if (minutes) {
-    strResult = `${strResult} ${minutes} minutes`;
+    resultText.push(`${minutes} minutes`);
   }
   if (seconds) {
-    strResult = `${strResult} ${seconds} seconds`;
+    resultText.push(`${seconds} seconds`);
   }
-  return `${strResult}`;
+  return resultText.join(' ');
 };
