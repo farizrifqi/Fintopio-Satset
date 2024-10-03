@@ -19,7 +19,11 @@ export class Fintopio {
     this.listInitiatedData = data;
     const defaultOptions: InitOptions = {
       verbose: false,
-      farming: true
+      jobs: {
+        farming: true,
+        daily: true,
+        diamond: true
+      }
     };
     this.options = { ...defaultOptions, ...options };
   }

@@ -352,6 +352,10 @@ export class Satset {
     return await this.runDaily();
   };
   run = async (): Promise<void> => {
-    await Promise.all([this.runDaily(), this.runFarming(), this.runDiamond()]);
+    const scheduledRun: Promise<void>[] = [];
+    if (this.options.jobs.farming) scheduledRun.push(this.runFarming());
+    if (this.options.jobs.daily) scheduledRun.push(this.runDaily());
+    if (this.options.jobs.diamond) scheduledRun.push(this.runDiamond());
+    await Promise.all([...scheduledRun]);
   };
 }

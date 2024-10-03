@@ -1,4 +1,5 @@
 import { BearerToken, QueryID } from './Auth';
+type Job = 'daily' | 'farming' | 'diamond';
 
 export interface InitData {
   queryId: QueryID;
@@ -6,6 +7,10 @@ export interface InitData {
 }
 
 export interface InitOptions {
-  farming?: boolean;
+  jobs: JobOptions;
   verbose?: boolean;
 }
+
+export type JobOptions = {
+  [K in Job]: boolean;
+};
