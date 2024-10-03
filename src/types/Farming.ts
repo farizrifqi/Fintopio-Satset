@@ -1,4 +1,4 @@
-export type FarmingState = "farming" | "idling" | "farmed";
+export type FarmingState = 'farming' | 'idling' | 'farmed';
 export interface FarmingStateResponse {
   state: FarmingState;
   farmed?: number;

@@ -1,8 +1,8 @@
-import { InitData, InitOptions } from "../types/Satset";
-import { Satset } from "./Satset";
-import { parseQuery } from "../utils/parser";
-import { BotIdentifier } from "../types/Auth";
-import { LogSystem } from "../utils/log";
+import { InitData, InitOptions } from '../types/Satset';
+import { Satset } from './Satset';
+import { parseQuery } from '../utils/parser';
+import { BotIdentifier } from '../types/Auth';
+import { LogSystem } from '../utils/log';
 
 interface FintopioBot {
   client: Satset;
@@ -12,21 +12,21 @@ export class Fintopio {
   public bots: FintopioBot[] = [];
   private listInitiatedData: InitData[];
   private options: InitOptions;
-  private log = new LogSystem("SYS");
+  private log = new LogSystem('SYS');
   private initiated = true;
 
   constructor(data: InitData[], options?: InitOptions) {
     this.listInitiatedData = data;
     const defaultOptions: InitOptions = {
       verbose: false,
-      farming: true,
+      farming: true
     };
     this.options = { ...defaultOptions, ...options };
   }
 
   private initBot = async (initData: InitData): Promise<void> => {
     const parsedQuery = parseQuery(initData.queryId);
-    const log = new LogSystem(parsedQuery?.user.username || "-");
+    const log = new LogSystem(parsedQuery?.user.username || '-');
     const bot = new Satset({ initData, log, options: this.options });
     // const initiated = await bot.makeRequest(bot["init"]);
     const initiated = await bot.init();
@@ -36,8 +36,8 @@ export class Fintopio {
       client: bot,
       data: {
         username: parsedQuery?.user.username ?? undefined,
-        telegramId: parsedQuery?.user.id?.toString() ?? undefined,
-      },
+        telegramId: parsedQuery?.user.id?.toString() ?? undefined
+      }
     });
   };
 
@@ -59,7 +59,7 @@ export class Fintopio {
       this.log.send(`error`, `Please initiate the bot first.`);
       return;
     }
-    this.log.send(`info`, "Running...");
+    this.log.send(`info`, 'Running...');
     await Promise.all(this.bots.map((bot) => bot.client.run()));
   };
 }

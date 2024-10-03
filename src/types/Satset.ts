@@ -1,4 +1,4 @@
-import { BearerToken, QueryID } from "./Auth";
+import { BearerToken, QueryID } from './Auth';
 
 export interface InitData {
   queryId: QueryID;
