@@ -228,6 +228,7 @@ export class Satset {
           headers: this._getHeaders()
         }
       );
+      console.log({ dt: response.data });
       return response.data;
     } catch (err) {
       const { message, statusCode }: ErrorResponse = err.response?.data;
@@ -353,9 +354,9 @@ export class Satset {
   };
   run = async (): Promise<void> => {
     const scheduledRun: Promise<void>[] = [];
-    if (this.options.jobs.farming) scheduledRun.push(this.runFarming());
-    if (this.options.jobs.daily) scheduledRun.push(this.runDaily());
-    if (this.options.jobs.diamond) scheduledRun.push(this.runDiamond());
+    if (this.options?.jobs?.farming) scheduledRun.push(this.runFarming());
+    if (this.options?.jobs?.daily) scheduledRun.push(this.runDaily());
+    if (this.options?.jobs?.diamond) scheduledRun.push(this.runDiamond());
     await Promise.all([...scheduledRun]);
   };
 }
