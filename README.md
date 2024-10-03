@@ -20,5 +20,6 @@ Bot to automate any task on [Fintopio](https://t.me/fintopio/wallet).
 ### Automaton
 
 - [x] Auto Farming
+- [x] Auto Claim Daily Rewards
+- [x] Auto Diamond Clicker
 - [] Auto Task
-- [] Auto Claim Daily Rewards
