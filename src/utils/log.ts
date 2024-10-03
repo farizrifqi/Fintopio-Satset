@@ -34,6 +34,9 @@ export class LogSystem {
         case 'danger':
           realOutputs = realOutputs.map((o) => colors.red(o));
           break;
+        case 'error':
+          realOutputs = realOutputs.map((o) => colors.red(o));
+          break;
         case 'warning':
           realOutputs = realOutputs.map((o) => colors.yellow(o));
           break;
