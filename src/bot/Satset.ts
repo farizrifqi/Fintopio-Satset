@@ -317,6 +317,12 @@ export class Satset {
           );
           runDelay = clickerDiamondState.timings?.nextAt - new Date().getTime();
         }
+      } else if (clickerDiamondState.state === 'completed') {
+        this.log.send(
+          'info',
+          'Next diamond in',
+          getRemainingTime(clickerDiamondState.timings?.nextAt / 1000)
+        );
       } else {
         this.log.send(
           'warning',
@@ -341,7 +347,6 @@ export class Satset {
     const response = await this.makeRequest(this.claimDailyCheckin);
     if (response) {
       const { claimed, dailyReward } = response as DailyCheckinResponse;
-
       if (!claimed) {
         this.log.send(
           'success',
