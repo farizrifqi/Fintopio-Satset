@@ -17,6 +17,7 @@ import type { RawAxiosRequestHeaders } from 'axios';
 import { getRemainingTime, sleep } from '../utils/helpers';
 import type { FastInitResponse } from '../types/FastInit';
 import type { DiamondNumber } from '../types/Diamond';
+import type { DailyCheckinResponse } from '../types/DailyCheckin';
 
 export class Satset {
   private queryId: QueryID;
@@ -111,7 +112,7 @@ export class Satset {
       this.log.send('info', 'Getting token');
       const auth = await this.makeAuth();
       if (!auth) {
-        this.log.send('warn', 'Failed getting token');
+        this.log.send('warning', 'Failed getting token');
         return false;
       }
       this.bearerToken = auth.token;
@@ -185,7 +186,9 @@ export class Satset {
     }
   };
   // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-  private claimDailyCheckin = async (): Promise<any | CustomError> => {
+  private claimDailyCheckin = async (): Promise<
+    DailyCheckinResponse | CustomError
+  > => {
     try {
       const response = await axios.post(
         DAILYCHECKINS_ENDPOINT,
@@ -198,7 +201,7 @@ export class Satset {
     } catch (err) {
       const { message, statusCode }: ErrorResponse = err.response.data;
       const errorHandled = await this._handleErrorAfterRequest({ message });
-      if (errorHandled) return await this.getFarmingState();
+      if (errorHandled) return await this.claimDailyCheckin();
       return new CustomError(message, statusCode);
     }
   };
@@ -233,7 +236,6 @@ export class Satset {
           headers: this._getHeaders()
         }
       );
-      console.log({ dt: response.data });
       return response.data;
     } catch (err) {
       const { message, statusCode }: ErrorResponse = err.response.data;
@@ -272,7 +274,7 @@ export class Satset {
           return await this.runFarming();
         }
       } else {
-        this.log.send('warn', 'Unhandled Farming State', `state: ${state}`);
+        this.log.send('warning', 'Unhandled Farming State', `state: ${state}`);
       }
     } else {
       this.log.send('error', 'Failed run farming');
@@ -304,7 +306,7 @@ export class Satset {
         if (clicks) {
           this.log.send('success', 'Successfully click diamond');
         } else {
-          this.log.send('warn', 'Failed to click diamond');
+          this.log.send('warning', 'Failed to click diamond');
         }
       } else if (clickerDiamondState.state === 'unavailable') {
         if (clickerDiamondState.timings?.nextAt) {
@@ -317,7 +319,7 @@ export class Satset {
         }
       } else {
         this.log.send(
-          'warn',
+          'warning',
           'Unhandled Clicker Diamond State',
           `state: ${clickerDiamondState.state}`
         );
@@ -336,16 +338,19 @@ export class Satset {
   };
   public runDaily = async (): Promise<void> => {
     const runDelay = 60 * 1000 * 60 * 12; // 12 hour
-    const dailyClaim = await this.makeRequest(this.claimDailyCheckin);
-    if (!dailyClaim.claimed) {
-      this.log.send(
-        'success',
-        'Successfully check-in for today',
-        `Claimed ${dailyClaim.dailyReward} points`,
-        `${dailyClaim.todalDays} day streak`
-      );
-    } else {
-      this.log.send('danger', 'Check-in not ready');
+    const response = await this.makeRequest(this.claimDailyCheckin);
+    if (response) {
+      const { claimed, dailyReward } = response as DailyCheckinResponse;
+
+      if (!claimed) {
+        this.log.send(
+          'success',
+          'Successfully check-in for today',
+          `Claimed ${dailyReward} points`
+        );
+      } else {
+        this.log.send('danger', 'Check-in not ready');
+      }
     }
     this.log.send(
       'info',
