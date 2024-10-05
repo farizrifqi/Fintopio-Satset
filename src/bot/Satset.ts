@@ -8,8 +8,8 @@ import {
   FASTINIT_ENDPOINT
 } from '../utils/constants';
 import type { InitData, InitOptions } from '../types/Satset';
-import type { BearerToken, QueryID } from '../types/Auth';
-import type { FarmingStateResponse } from '../types/Farming';
+import type { AuthResponse, BearerToken, QueryID } from '../types/Auth';
+import type { ClaimFarmingResponse, FarmingStateResponse, StartFarmingResponse } from '../types/Farming';
 import type { ErrorResponse } from '../types/Error';
 import { CustomError } from './Error';
 import type { LogSystem } from '../utils/log';
@@ -81,7 +81,7 @@ export class Satset {
   public async makeRequest<T extends (...args: any[]) => Promise<any>>(
     func: T,
     ...params: Parameters<T>
-  ): Promise<ReturnType<T> | null> {
+  ): Promise<ReturnType<T> | null | Error | CustomError> {
     const retries: number =
       params[0] && typeof params[0] === 'object' && 'retries' in params[0]
         ? (params[0] as { retries: number }).retries
@@ -111,17 +111,25 @@ export class Satset {
     if (!this.bearerToken) {
       this.log.send('info', 'Getting token');
       const auth = await this.makeAuth();
-      if (!auth) {
-        this.log.send('warning', 'Failed getting token');
-        return false;
+      if (auth) {
+        if (!auth || typeof auth === 'boolean') {
+          this.log.send('warning', 'Failed getting token');
+          return false;
+        }
+        const { token } = auth as AuthResponse
+        if (typeof token === 'string') {
+          this.bearerToken = token;
+          this.log.send('success', 'Getting token completed');
+        } else {
+          this.log.send('warning', 'Invalid token received');
+          return false;
+        }
       }
-      this.bearerToken = auth.token;
-      this.log.send('success', 'Getting token completed');
-      return true;
-    }
 
-    return true;
-  };
+      return true;
+    };
+    return true
+  }
   private fastInit = async (): Promise<FastInitResponse | CustomError> => {
     try {
       const response = await axios.get(FASTINIT_ENDPOINT, {
@@ -135,8 +143,7 @@ export class Satset {
       return new CustomError(message, statusCode);
     }
   };
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-  makeAuth = async (): Promise<any> => {
+  makeAuth = async (): Promise<AuthResponse | false> => {
     try {
       const response = await axios.get(
         `${AUTH_ENDPOINT}/telegram?${this.queryId}`,
@@ -167,8 +174,7 @@ export class Satset {
       return new CustomError(message, statusCode);
     }
   };
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-  private startFarming = async (): Promise<any | CustomError> => {
+  private startFarming = async (): Promise<StartFarmingResponse | CustomError> => {
     try {
       const response = await axios.post(
         `${FARMING_ENDPOINT}/farm`,
@@ -185,7 +191,6 @@ export class Satset {
       return new CustomError(message, statusCode);
     }
   };
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   private claimDailyCheckin = async (): Promise<
     DailyCheckinResponse | CustomError
   > => {
@@ -206,8 +211,7 @@ export class Satset {
     }
   };
 
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-  private claimFarming = async (): Promise<any | CustomError> => {
+  private claimFarming = async (): Promise<ClaimFarmingResponse | CustomError> => {
     try {
       const response = await axios.post(
         `${FARMING_ENDPOINT}/claim`,
@@ -263,7 +267,6 @@ export class Satset {
         if (this.options.verbose)
           this.log.send('info', 'Claiming farming reward');
         const claimFarming = await this.makeRequest(this.claimFarming);
-
         this.log.send('success', 'Farming reward claimed.');
         if (claimFarming) return await this.runFarming();
       } else if (state === 'idling') {
@@ -291,6 +294,10 @@ export class Satset {
   public runDiamond = async (): Promise<void> => {
     let runDelay = 60 * 1000 * 60; // 1 hour
     const response = await this.makeRequest(this.fastInit);
+    if (response instanceof CustomError) {
+      this.log.send('danger', response.message);
+      await sleep(runDelay)
+    }
     if (response) {
       const { clickerDiamondState } = response as FastInitResponse;
 
