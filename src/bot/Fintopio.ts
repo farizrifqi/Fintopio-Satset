@@ -28,10 +28,10 @@ export class Fintopio {
     this.options = { ...defaultOptions, ...options };
   }
 
-  private initBot = async (initData: InitData): Promise<void> => {
+  private initBot = async (initData: InitData, referral?: string): Promise<void> => {
     const parsedQuery = parseQuery(initData.queryId);
     const log = new LogSystem(parsedQuery?.user.username || '-');
-    const bot = new Satset({ initData, log, options: this.options });
+    const bot = new Satset({ initData, log, options: this.options, referral });
     // const initiated = await bot.makeRequest(bot["init"]);
     const initiated = await bot.init();
 
@@ -41,7 +41,7 @@ export class Fintopio {
       data: {
         username: parsedQuery?.user.username ?? undefined,
         telegramId: parsedQuery?.user.id?.toString() ?? undefined
-      }
+      },
     });
   };
 
@@ -65,5 +65,13 @@ export class Fintopio {
     }
     this.log.send('info', 'Running...');
     await Promise.all(this.bots.map((bot) => bot.client.run()));
+  };
+  public activateRef = async (referral: string): Promise<void> => {
+    if (!this.initiated) {
+      this.log.send('error', 'Please initiate the bot first.');
+      return;
+    }
+    this.log.send('info', 'Running...');
+    await Promise.all(this.bots.map((bot) => bot.client.activateReferrals(referral)));
   };
 }

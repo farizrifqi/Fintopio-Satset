@@ -5,7 +5,8 @@ import {
   DAILYCHECKINS_ENDPOINT,
   DIAMONDCLICKER_ENDPOINT,
   FARMING_ENDPOINT,
-  FASTINIT_ENDPOINT
+  FASTINIT_ENDPOINT,
+  REF_ENDPOINT
 } from '../utils/constants';
 import type { InitData, InitOptions } from '../types/Satset';
 import type { AuthResponse, BearerToken, QueryID } from '../types/Auth';
@@ -18,13 +19,14 @@ import { getRemainingTime, sleep } from '../utils/helpers';
 import type { FastInitResponse } from '../types/FastInit';
 import type { DiamondNumber } from '../types/Diamond';
 import type { DailyCheckinResponse } from '../types/DailyCheckin';
+import { parseRefCode } from '../utils/parser';
 
 export class Satset {
   private queryId: QueryID;
   private bearerToken?: BearerToken;
 
   private log: LogSystem;
-  private referrals: string | undefined = undefined
+  private referral: string | undefined = undefined
   // Options
   private options: InitOptions;
 
@@ -32,19 +34,19 @@ export class Satset {
     initData,
     log,
     options,
-    referrals
+    referral
   }: {
     initData: InitData;
     log: LogSystem;
     options: InitOptions;
-    referrals?: string;
+    referral?: string;
   }) {
     this.queryId = initData.queryId;
     this.bearerToken = initData.bearerToken;
     this.log = log;
     this.options = options;
 
-    this.referrals = referrals
+    this.referral = referral
   }
   private _checkBeforeRequest = async (): Promise<void> => {
     if (!this.bearerToken) {
@@ -147,10 +149,30 @@ export class Satset {
       return new CustomError(message, statusCode);
     }
   };
+  activateReferrals = async (referral: string): Promise<void> => {
+    try {
+      const parsedReferral = await parseRefCode(referral)
+      if (!parsedReferral) {
+        this.log.send('error', 'Referral could be invalid')
+        return;
+      }
+      const response = await axios.post(`${REF_ENDPOINT}/activate`,
+        { code: parsedReferral }, {
+        headers: this._getHeaders()
+      });
+      console.log(response.data)
+    } catch (err) {
+      const { message: errorMessage }: ErrorResponse = err.response.data;
+      this.log.send('error', errorMessage)
+    }
+  };
   makeAuth = async (): Promise<AuthResponse | false> => {
     try {
       let url = `${AUTH_ENDPOINT}/telegram?${this.queryId}`
-      if (this.referrals) url += `&start_param=${this.referrals}`
+      if (this.referral) {
+        const parsedReferral = await parseRefCode(this.referral)
+        if (parsedReferral) url += `&start_param=${parsedReferral}`
+      }
       const response = await axios.get(url,
         {
           headers: this._getHeaders()
