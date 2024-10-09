@@ -24,23 +24,27 @@ export class Satset {
   private bearerToken?: BearerToken;
 
   private log: LogSystem;
-
+  private referrals: string | undefined = undefined
   // Options
   private options: InitOptions;
 
   constructor({
     initData,
     log,
-    options
+    options,
+    referrals
   }: {
     initData: InitData;
     log: LogSystem;
     options: InitOptions;
+    referrals?: string;
   }) {
     this.queryId = initData.queryId;
     this.bearerToken = initData.bearerToken;
     this.log = log;
     this.options = options;
+
+    this.referrals = referrals
   }
   private _checkBeforeRequest = async (): Promise<void> => {
     if (!this.bearerToken) {
@@ -145,8 +149,9 @@ export class Satset {
   };
   makeAuth = async (): Promise<AuthResponse | false> => {
     try {
-      const response = await axios.get(
-        `${AUTH_ENDPOINT}/telegram?${this.queryId}`,
+      let url = `${AUTH_ENDPOINT}/telegram?${this.queryId}`
+      if (this.referrals) url += `&start_param=${this.referrals}`
+      const response = await axios.get(url,
         {
           headers: this._getHeaders()
         }
